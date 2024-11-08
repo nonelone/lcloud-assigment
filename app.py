@@ -83,22 +83,52 @@ def delete_files_by_filter(re_filter, bucket="*", prefix=""):
 
 if __name__ == "__main__":
 
-    bucket = s3.Bucket('developer-task')
-    prefix = "a-wing"
+    running = True
 
-    res = upload_file("file_to_be_uploaded", 'developer-task', prefix)
-    print(res)
+    print("Welcome to S3 AWS CLI")
+
+    bucket_name = input("Give me the name of the bucket > ")
+    prefix_name = input("Give me the prefix > ")
+    bucket = s3.Bucket(bucket_name)
+    prefix = prefix_name
+
+    print("Usage: list_files, upload_files, filter_files, delete_files, exit")
+
+    while running:
+        order = input("What do you want to do: ")
+
+        match order:
+            case "help":
+                print("Usage: list_files, upload_files, filter_files, delete_files, exit")
+            
+            case "list_files":
+                files = list_files(bucket, prefix)
+                for file in files:
+                    print(file)
+
+            case "upload_files":
+                path = input("What file? ")
+                res = upload_file(path, bucket.name, prefix)
+                if res == True:
+                    print("Done.") #no need to print false as the user will see an error
+
+            case "filter_files":
+                given_filter = input("What RE? ")
+                files = filter_files(given_filter, bucket, prefix)
+                for file in files:
+                    print(file)
+
+            case "delete_files":
+                given_filter = input("What RE? ")
+                res = delete_files_by_filter(example_filter, bucket, prefix)
+                if res == True:
+                    print("Done")
+
+            
+            case "exit": running = False
+
+
+
+
     
     
-    files = list_files(bucket, prefix)
-    for file in files:
-        print(file)
-
-    example_filter = "^p"
-
-    files = filter_files(example_filter, bucket, prefix)
-    for file in files:
-        print(file)
-
-    res = delete_files_by_filter(example_filter, bucket, prefix)
-    print(res)
