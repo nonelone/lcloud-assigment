@@ -1,5 +1,6 @@
 import boto3
-import re
+
+import re, os
 
 import secrets
 
@@ -15,43 +16,72 @@ def list_files(bucket, prefix=""):
     for obj in bucket.objects.filter(Prefix=prefix):
         file_name = obj.key.split("/")[-1]
         if obj.key != ( prefix + "/" ) and file_name != "": # do not print the root directory
-            print(file_name)
             files.append(file_name)
+
+    if files == []: print("No files found!")
 
     return files
 
 
 
-def upload_file(file, target):
-    pass
+def upload_file(file, bucket, prefix=""):
+    upload_client = boto3.client(
+            's3',
+            aws_access_key_id = secrets.access_key_id,
+            aws_secret_access_key = secrets.access_key
+        )
+    
+    try:
+        response = upload_client.upload_file(file, bucket, os.path.basename(file))
+    except Exception as e:
+        print(e)
+        return False
+    
+    return True
 
 def filter_files(re_filter, bucket="*", prefix=""):
     files = []
+
     for obj in bucket.objects.filter(Prefix=prefix):
-        if obj.key != ( prefix + "/" ): # ignore the root directory
-            files.append(obj.key)
+        file_name = obj.key.split("/")[-1]
+        if obj.key != ( prefix + "/" ) and file_name != "": # ignore the root directory
+            files.append(file_name)
 
+    res_files = []
     for file in files:
-        match = re.search(re_filter, file)
-        if not match:
-            files.remove(file)
-        else:
-            print(file)
+        found = re.search(re_filter, file)
+        if found:
+            res_files.append(file)
+    
+    if res_files == []: print("No files found!")
 
-    return files
+    return res_files
 
     
 
 def delete_files_by_filter(re_filter, bucket="*", prefix=""):
-    pass
+    files_to_delete = filter_files(example_filter, bucket, prefix)
+    return files_to_delete
 
 if __name__ == "__main__":
 
     bucket = s3.Bucket('developer-task')
     prefix = "a-wing"
+
+    res = upload_file("file_to_be_uploaded", 'developer-task', prefix)
+    print(res)
     
-    _ = list_files(bucket, prefix)
+    
+    files = list_files(bucket, prefix)
+    for file in files:
+        print(file)
 
-    example_filter = "^i"
+    example_filter = "^p"
 
-    _ = filter_files(example_filter, bucket, prefix)
+    files = filter_files(example_filter, bucket, prefix)
+    for file in files:
+        print(file)
+
+    files = delete_files_by_filter(example_filter, bucket, prefix)
+    for file in files:
+        print(file)
