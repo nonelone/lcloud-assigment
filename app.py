@@ -23,7 +23,6 @@ def list_files(bucket, prefix=""):
     return files
 
 
-
 def upload_file(file, bucket, prefix=""):
     upload_client = boto3.client(
             's3',
@@ -57,11 +56,30 @@ def filter_files(re_filter, bucket="*", prefix=""):
 
     return res_files
 
-    
-
 def delete_files_by_filter(re_filter, bucket="*", prefix=""):
     files_to_delete = filter_files(example_filter, bucket, prefix)
-    return files_to_delete
+    
+    deletion_client = boto3.client(
+        's3',
+        aws_access_key_id = secrets.access_key_id,
+        aws_secret_access_key = secrets.access_key
+    )
+
+    # we have only filename and not the path:
+    file_paths = []
+    for obj in bucket.objects.filter(Prefix=prefix):
+        if obj.key.split("/")[-1] in files_to_delete:
+            file_paths.append(obj.key)
+
+    
+    for file in file_paths:
+        try:
+            res = deletion_client.delete_object(Bucket=bucket.name, Key=file)
+        except Exception as e:
+            print(e)
+            return False
+
+    return True
 
 if __name__ == "__main__":
 
@@ -82,6 +100,5 @@ if __name__ == "__main__":
     for file in files:
         print(file)
 
-    files = delete_files_by_filter(example_filter, bucket, prefix)
-    for file in files:
-        print(file)
+    res = delete_files_by_filter(example_filter, bucket, prefix)
+    print(res)
